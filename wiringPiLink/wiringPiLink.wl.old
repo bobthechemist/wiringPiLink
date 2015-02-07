@@ -1,0 +1,131 @@
+(* ::Package:: *)
+
+(* Mathematica Package *)
+
+(* Created by BoBtheChemist February 1, 2015 *)
+(* wiringPiLink.wl,v 1 *)
+(* Many parts of this package were inspired by GPIOLink by lambertc *)
+
+BeginPackage["wiringPiLink`"]
+(* Exported symbols added here with SymbolName::usage *)
+
+wiringPiInit::usage = "wiringPiInit[] initializes the GPIO interface";
+wiringPiRead::usage = "wiringPiRead[pin] gets the value of pin";
+wiringPiWrite::usage = "wiringPiWrite[pin,value] sets the value of pin, value can be 0 or 1";
+wiringPiMode::usage == "wiringPiMode[pin,mode] sets pin as either INPUT (0) or OUTPUT (1)";
+wiringPiPWMCreate::usage = "wiringPiPWMCreate[pin,value] initializes pin as a software PWm with an initial value from 0 to 100";
+wiringPiPWMUpdate::usage = "wiringPiPWMUpdate[pin,value] updates a software PWM pin with a new value (between 0 and 100)";
+wiringPiReset::usage = "wiringPiReset[] unloads the library functions";
+(* low level functions *)
+lfPiInit::usage = "";
+lfPiRead::usage = "";
+lfPiWrite::usage = "";
+
+
+
+(* Messages *)
+wiringPiGeneral::invalidpin = "`1` is not a valid pin.  Note that current implementation uses WiringPi numbering scheme."
+wiringPiPWM::outofrange = "`1` is outside of the valid PWM range (0 to 100)."
+
+
+Begin["`Private`"]
+(* Implementation of package *)
+
+$packageFile = $InputFileName;
+$libName = "libwiringpi.so.1.0.1";
+
+$adapterLib = FileNameJoin[{FileNameTake[$packageFile,{1,-2}],"LibraryResources",$SystemID,$libName}];
+$adapterInitialized;
+
+loadAdapter[]:=
+(
+	If[!ValueQ@$adapterInitialized,
+    lfPiInit = LibraryFunctionLoad[$adapterLib,"wiringpi_initialize",{Integer},Integer];
+		lfPiRead = LibraryFunctionLoad[$adapterLib,"wiringpi_pinread",{Integer},Integer];
+		lfPiWrite = LibraryFunctionLoad[$adapterLib,"wiringpi_pinwrite",{Integer, Integer}, Integer];
+		lfPiMode = LibraryFunctionLoad[$adapterLib,"wiringpi_pinmode",{Integer,Integer},Integer];
+		lfPiPWMCreate = LibraryFunctionLoad[$adapterLib,"wiringpi_softPwmCreate",{Integer,Integer},Integer];
+		lfPiPWMUpdate = LibraryFunctionLoad[$adapterLib,"wiringpi_softPwmWrite",{Integer,Integer},Integer];
+
+		$adapterInitialized = True;
+	]
+)
+loadAdapter[];
+lfPiInit[1];
+
+wiringPiInit[]:=
+(
+  loadAdapter[];
+  lfPiInit[1];
+)
+
+wiringPiReset[]:=
+(
+	LibraryUnload[$adapterLib];
+	$adapterInitialized = False;
+);
+
+$$enums = {"Input" -> 0, "Output" -> 1};
+
+wiringPiRead[pin_Integer]:=
+Module[{out},
+	loadAdapter[];
+	out = If[0<=pin<=20,
+		lfPiRead[pin],
+		Message[wiringPiGeneral::invalidpin,pin];
+		$Failed]
+];
+
+wiringPiWrite[pin_Integer,value_]:=
+(
+  lfPiWrite[pin,value];
+);
+
+wiringPiWriteold[pin_Integer,value:(0|1)]:=
+Module[{},
+	If[0<=pin<=20,
+		lfPiWrite[pin,value];,
+		Message[wiringPiGeneral::invalidpin,pin];
+		$Failed]
+];
+	
+wiringPiMode[pin_Integer,mode:(0|1)]:=
+Module[{},
+	loadAdapter[];
+	If[0<=pin<=20,
+		lfPiMode[pin,mode];,
+		Message[wiringPiGeneral::invalidpin,pin];
+		$Failed]
+];
+
+wiringPiPWMCreate[pin_Integer,value_Integer]:=
+Module[{$proceed=True},
+	loadAdapter[];
+	If[Not[0<=pin<=20],
+		$proceed=False;
+		Message[wiringPiGeneral::invalidpin,pin];];
+	If[Not[0<=value<=100],
+		$proceed=False;
+		Message[wiringPiPWM::outofrange,value];];
+	If[$proceed==True,
+		lfPiPWMCreate[pin,value];,
+		$Failed]
+];
+
+wiringPiPWMUpdate[pin_Integer,value_Integer]:=
+Module[{$proceed=True},
+	loadAdapter[];
+	If[Not[0<=pin<=20],
+		$proceed=False;
+		Message[wiringPiGeneral::invalidpin,pin];];
+	If[Not[0<=value<=100],
+		$proceed=False;
+		Message[wiringPiPWM::outofrange,value];];
+	If[$proceed==True,
+		lfPiPWMUpdate[pin,value];,
+		$Failed]
+];
+
+End[]
+
+EndPackage[]
