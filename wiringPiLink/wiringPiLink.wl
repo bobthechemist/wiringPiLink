@@ -18,7 +18,11 @@ wiringPiPWMUpdate::usage = "wiringPiPWMUpdate[pin,value] updates a software PWM 
 wiringPiReset::usage = "wiringPiReset[] unloads the library functions";
 wiringPiFlicker::usage = "wiringPiFlicker[args___] creates a flickering effect using PWM"
 wiringPiFun::usage = "wirignPiFun[args__] is whatever I'm working on at the moment."
+wiringPiFade::usage = "fading LED"
+wiringPiBounce::usage = "Visualize a differential equation"
 
+(* Utility functions *)
+halt[]:= StopScheduledTask/@ScheduledTasks[];
 
 (* Messages *)
 wiringPiGeneral::invalidpin = "`1` is not a valid pin.  Note that current implementation uses WiringPi numbering scheme."
@@ -66,7 +70,6 @@ wiringPiFlicker[pin_,brightness_,wind_]:=Module[{task},
 	wiringPiPWMCreate[pin,0];
 	(* Create task, note there is NO error checking here *)
 	task = CreateScheduledTask[
-		Pause[RandomReal[]/50];
 		wiringPiPWMUpdate[pin,RandomVariate[BinomialDistribution[brightness,wind]]],0.05];
 	(* Start the task *)
 	StartScheduledTask[task];
@@ -86,6 +89,36 @@ wiringPiFun[]:=Module[{pins,brighness,wind, task},
   StartScheduledTask[task];
   task
 ];
+
+$wpFadeTimer = 0;
+wiringPiFade[pin_,freq_]:=Module[{task},
+  wiringPiMode[pin,1];
+  wiringPiPWMCreate[pin,0];
+  $wpFadeTimer = 0;
+  task = CreateScheduledTask[
+    wiringPiPWMUpdate[
+      pin,Round@Rescale[Sin@(freq*$wpFadeTimer++),{-1,1},{0,50}]],
+    {0.01,9000}];
+  StartScheduledTask@task;
+  task
+];
+
+$wpBounceTimer = 0;
+$bounce = First@NDSolve[{y''[t]==-9.81,y[0]==50,y'[0]==0,
+  WhenEvent[y[t]==0,y'[t]->-0.95 y'[t]]},y,{t,0,100}];
+  
+wiringPiBounce[pin_]:=Module[{task},
+  wiringPiMode[pin,1];
+  wiringPiPWMCreate[pin,0];
+  $wpBounceTimer = 0;
+  task = CreateScheduledTask[
+    wiringPiPWMUpdate[pin,
+      Round@(y[Mod[0.6 $wpBounceTimer++,100]]/.$bounce)],
+      {0.01,9000}];
+  StartScheduledTask@task;
+  task
+];
+
 End[]
 
 EndPackage[]
