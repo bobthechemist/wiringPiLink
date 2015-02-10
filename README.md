@@ -19,4 +19,8 @@ response time so I have put that project on the back burner.
 In theory, all you need to do is compile the c code (with compile.sh) and
 then put it into the appropriate directory (./wiringPiLink/LibraryResoruces/Linux-ARM/) and then you can call it (from ./) using <<wiringPiLink`
 
+## Library versions ##
+
+1.0.2 Added ability to read analog signals through the SPI interface and a MCP3008
+1.0.1 Basic GPIO pin reading and writing along with software PWM
 

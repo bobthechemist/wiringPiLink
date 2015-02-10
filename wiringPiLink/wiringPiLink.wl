@@ -20,6 +20,8 @@ wiringPiFlicker::usage = "wiringPiFlicker[args___] creates a flickering effect u
 wiringPiFun::usage = "wirignPiFun[args__] is whatever I'm working on at the moment."
 wiringPiFade::usage = "fading LED"
 wiringPiBounce::usage = "Visualize a differential equation"
+wiringPiAnalogRead::usage = "wiringPiAnalogRead[channel] reads the analog signal on a channel (0 to 7) of the MCP3008."
+
 
 (* Utility functions *)
 halt[]:= StopScheduledTask/@ScheduledTasks[];
@@ -33,7 +35,7 @@ Begin["`Private`"]
 (* Implementation of package *)
 
 $packageFile = $InputFileName;
-$libName = "libwiringpi.so.1.0.1";
+$libName = "libwiringpi.so.1.0.2";
 
 $adapterLib = FileNameJoin[{FileNameTake[$packageFile,{1,-2}],"LibraryResources",$SystemID,$libName}];
 $adapterInitialized;
@@ -47,6 +49,7 @@ loadAdapter[]:=
 		wiringPiMode = LibraryFunctionLoad[$adapterLib,"wiringpi_pinmode",{Integer,Integer},Integer];
 		wiringPiPWMCreate = LibraryFunctionLoad[$adapterLib,"wiringpi_softPwmCreate",{Integer,Integer},Integer];
 		wiringPiPWMUpdate = LibraryFunctionLoad[$adapterLib,"wiringpi_softPwmWrite",{Integer,Integer},Integer];
+    wiringPiAnalogRead = LibraryFunctionLoad[$adapterLib,"wiringpi_analogread",{Integer},Integer];
 
 		$adapterInitialized = True;
 	]
@@ -113,7 +116,7 @@ wiringPiBounce[pin_]:=Module[{task},
   $wpBounceTimer = 0;
   task = CreateScheduledTask[
     wiringPiPWMUpdate[pin,
-      Round@(y[Mod[0.6 $wpBounceTimer++,100]]/.$bounce)],
+      Round@(y[Mod[0.4 $wpBounceTimer++,100]]/.$bounce)],
       {0.01,9000}];
   StartScheduledTask@task;
   task

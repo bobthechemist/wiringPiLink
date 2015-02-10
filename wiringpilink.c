@@ -7,6 +7,10 @@
 #include "WolframLibrary.h"
 #include "wiringPi.h"
 #include "softPwm.h"
+#include "mcp3004.h"
+
+#define BASE 100
+#define SPI_CHAN 0
 
 /* Not sure if the following are necessary or how to utilize them */
 /* Initialize Library */
@@ -24,6 +28,7 @@ void WolframLibrary_uninitialize( WolframLibraryData libData) {
 
 int wiringpi_initialize( WolframLibraryData libData,mint Argc, MArgument *Args, MArgument Res){
   wiringPiSetup();
+  mcp3004Setup (BASE, SPI_CHAN);
   return LIBRARY_NO_ERROR;
 }
 
@@ -78,5 +83,15 @@ int wiringpi_softPwmWrite(WolframLibraryData libData,mint Argc, MArgument *Args,
   pin = MArgument_getInteger(Args[0]);
   val = MArgument_getInteger(Args[1]);
   softPwmWrite(pin,val);
+  return LIBRARY_NO_ERROR;
+}
+
+/* Analog reading from MCP 3008 */
+int wiringpi_analogread( WolframLibraryData libData,mint Argc, MArgument *Args, MArgument Res){
+  mint channel;
+  mint out;
+  channel = MArgument_getInteger(Args[0]);
+  out = analogRead(BASE + channel);
+  MArgument_setInteger(Res,out);
   return LIBRARY_NO_ERROR;
 }
