@@ -25,6 +25,8 @@ void WolframLibrary_uninitialize( WolframLibraryData libData) {
 /* Initialization routine, current doesn't do anything with */
 /*  arguments but can eventually be used to determine which */
 /*  type of numbering scheme is to be used.                 */
+/* BASE and SPI Channel are fixed, but presumably can be    */
+/*  replaced with arguments at some point in the future     */
 
 int wiringpi_initialize( WolframLibraryData libData,mint Argc, MArgument *Args, MArgument Res){
   wiringPiSetup();
@@ -32,13 +34,30 @@ int wiringpi_initialize( WolframLibraryData libData,mint Argc, MArgument *Args, 
   return LIBRARY_NO_ERROR;
 }
 
+/* Checks if valid pin number has been passed.  Currently only checks  */
+/*  if the pin is a legitimate number within the wiringPi designation. */
+int validpinQ(mint pin){
+  if(pin <= 20 && pin >=0){
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 /* Reads the state of a pin */
 int wiringpi_pinread( WolframLibraryData libData,mint Argc, MArgument *Args, MArgument Res){
   mint pin;
-  mint out;
+  // There should only be one argument, the pin number to read.
   pin = MArgument_getInteger(Args[0]);
-  out = digitalRead(pin);
-  MArgument_setInteger(Res,out);
+  // Check if pin is a valid pin number, if so, read the pin. Returns
+  // -1 if the pin number is invalid.
+  if(validpinQ(pin)){
+    //out = digitalRead(pin);
+    MArgument_setInteger(Res,digitalRead(pin));
+  } else{
+    MArgument_setInteger(Res,-1);
+    libData->Message("invalidpin");
+  }
   return LIBRARY_NO_ERROR;
 }
   
@@ -48,8 +67,20 @@ int wiringpi_pinwrite( WolframLibraryData libData,mint Argc, MArgument *Args, MA
   mint value;
   pin = MArgument_getInteger(Args[0]);
   value = MArgument_getInteger(Args[1]);
-  digitalWrite(pin,value);
-  MArgument_setInteger(Res,1);
+  // Will check that the pin is valid and that the value to be assigned to the pin is legitimate (0 or 1).
+  if(validpinQ(pin)){
+    if(value==0 || value==1) {
+      digitalWrite(pin,value);
+      MArgument_setInteger(Res,1);
+    } else {
+      MArgument_setInteger(Res,-1);
+      libData->Message("invalidassignment");
+    }
+  } else {
+    MArgument_setInteger(Res,-1);
+    libData->Message("invalidpin");
+  }
+
   return LIBRARY_NO_ERROR;
 }
 
@@ -57,11 +88,21 @@ int wiringpi_pinwrite( WolframLibraryData libData,mint Argc, MArgument *Args, MA
 int wiringpi_pinmode( WolframLibraryData libData, mint Argc, MArgument *Args, MArgument Res){
   mint pin;
   mint mode;
+  // Check that the pin assignment is valid and that mode is either 0 (input) or 1 (output)
   pin = MArgument_getInteger(Args[0]);
   mode = MArgument_getInteger(Args[1]);
-  pinMode(pin,mode);
-  /* pinMode does not return a value so always return 1 for now */
-  MArgument_setInteger(Res,1);
+  if(validpinQ(pin)){
+    if(mode==0||mode==1){
+      pinMode(pin,mode);
+      MArgument_setInteger(Res,1);
+    } else {
+      libData->Message("invalidmode");
+      MArgument_setInteger(Res,-1);
+    }
+  } else {
+    MArgument_setInteger(Res,-1);
+    libData->Message("invalidpin");
+  }
   return LIBRARY_NO_ERROR;
 }
 

@@ -27,8 +27,10 @@ wiringPiAnalogRead::usage = "wiringPiAnalogRead[channel] reads the analog signal
 halt[]:= StopScheduledTask/@ScheduledTasks[];
 
 (* Messages *)
-wiringPiGeneral::invalidpin = "`1` is not a valid pin.  Note that current implementation uses WiringPi numbering scheme."
-wiringPiPWM::outofrange = "`1` is outside of the valid PWM range (0 to 100)."
+LibraryFunction::invalidpin = "An invalid pin number was passed to a LibraryFunction.  Note that current implementation uses WiringPi numbering scheme."
+LibraryFunction::invalidassignment = "An attempt to write something other than a 0 or 1 to a digital pin was made."
+LibraryFunction::invalidmode = "An improper mode was assigned to a pin.  Valid values are 0 for input and 1 for output."
+LibraryFunction::outofrange = "An attempt to assign an invalid value to a software PWM was made.  Valid softPWM values are from 0 to 100."
 
 
 Begin["`Private`"]
